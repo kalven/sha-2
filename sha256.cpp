@@ -54,7 +54,7 @@ static u32 Sigma1(u32 x)            { return Rot(x, 6) ^ Rot(x, 11) ^ Rot(x, 25)
 static u32 Gamma0(u32 x)            { return Rot(x, 7) ^ Rot(x, 18) ^ Sh(x, 3); }
 static u32 Gamma1(u32 x)            { return Rot(x, 17) ^ Rot(x, 19) ^ Sh(x, 10); }
 
-static void sha256_compress(sha256_state& md, const unsigned char* buf)
+static void sha_compress(sha256_state& md, const unsigned char* buf)
 {
     u32 S[8], W[64], t0, t1, t;
 
@@ -93,7 +93,7 @@ static void sha256_compress(sha256_state& md, const unsigned char* buf)
 
 // Public interface
 
-void sha256_init(sha256_state& md)
+void sha_init(sha256_state& md)
 {
     md.curlen = 0;
     md.length = 0;
@@ -107,7 +107,7 @@ void sha256_init(sha256_state& md)
     md.state[7] = 0x5BE0CD19UL;
 }
 
-void sha256_process(sha256_state& md, const void* src, u32 inlen)
+void sha_process(sha256_state& md, const void* src, u32 inlen)
 {
     const u32 block_size = sizeof(sha256_state::buf);
     auto in = static_cast<const unsigned char*>(src);
@@ -116,7 +116,7 @@ void sha256_process(sha256_state& md, const void* src, u32 inlen)
     {
         if(md.curlen == 0 && inlen >= block_size)
         {
-            sha256_compress(md, in);
+            sha_compress(md, in);
             md.length += block_size * 8;
             in        += block_size;
             inlen     -= block_size;
@@ -131,7 +131,7 @@ void sha256_process(sha256_state& md, const void* src, u32 inlen)
 
             if(md.curlen == block_size)
             {
-                sha256_compress(md, md.buf);
+                sha_compress(md, md.buf);
                 md.length += 8*block_size;
                 md.curlen = 0;
             }
@@ -139,7 +139,7 @@ void sha256_process(sha256_state& md, const void* src, u32 inlen)
     }
 }
 
-void sha256_done(sha256_state& md, void* out)
+void sha_done(sha256_state& md, void* out)
 {
     // Increase the length of the message
     md.length += md.curlen * 8;
@@ -153,7 +153,7 @@ void sha256_done(sha256_state& md, void* out)
     {
         while(md.curlen < 64)
             md.buf[md.curlen++] = 0;
-        sha256_compress(md, md.buf);
+        sha_compress(md, md.buf);
         md.curlen = 0;
     }
 
@@ -163,7 +163,7 @@ void sha256_done(sha256_state& md, void* out)
 
     // Store length
     store64(md.length, md.buf+56);
-    sha256_compress(md, md.buf);
+    sha_compress(md, md.buf);
 
     // Copy output
     for(int i = 0; i < 8; i++)

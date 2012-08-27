@@ -54,7 +54,7 @@ static u64 Sigma1(u64 x)            { return Rot(x, 14) ^ Rot(x, 18) ^ Rot(x, 41
 static u64 Gamma0(u64 x)            { return Rot(x, 1) ^ Rot(x, 8) ^ Sh(x, 7); }
 static u64 Gamma1(u64 x)            { return Rot(x, 19) ^ Rot(x, 61) ^ Sh(x, 6); }
 
-static void sha512_compress(sha512_state& md, const unsigned char *buf)
+static void sha_compress(sha512_state& md, const unsigned char *buf)
 {
     u64 S[8], W[80], t0, t1;
 
@@ -98,7 +98,7 @@ static void sha512_compress(sha512_state& md, const unsigned char *buf)
 
 // Public interface
 
-void sha512_init(sha512_state& md)
+void sha_init(sha512_state& md)
 {
     md.curlen = 0;
     md.length = 0;
@@ -112,7 +112,7 @@ void sha512_init(sha512_state& md)
     md.state[7] = 0x5be0cd19137e2179ULL;
 }
 
-void sha512_process(sha512_state& md, const void* src, u32 inlen)
+void sha_process(sha512_state& md, const void* src, u32 inlen)
 {
     const u32 block_size = sizeof(sha512_state::buf);
     auto in = static_cast<const unsigned char*>(src);
@@ -121,7 +121,7 @@ void sha512_process(sha512_state& md, const void* src, u32 inlen)
     {
         if(md.curlen == 0 && inlen >= block_size)
         {
-            sha512_compress(md, in);
+            sha_compress(md, in);
             md.length += block_size * 8;
             in        += block_size;
             inlen     -= block_size;
@@ -136,7 +136,7 @@ void sha512_process(sha512_state& md, const void* src, u32 inlen)
 
             if(md.curlen == block_size)
             {
-                sha512_compress(md, md.buf);
+                sha_compress(md, md.buf);
                 md.length += 8*block_size;
                 md.curlen = 0;
             }
@@ -144,7 +144,7 @@ void sha512_process(sha512_state& md, const void* src, u32 inlen)
     }
 }
 
-void sha512_done(sha512_state& md, void *out)
+void sha_done(sha512_state& md, void *out)
 {
     // Increase the length of the message
     md.length += md.curlen * 8ULL;
@@ -158,7 +158,7 @@ void sha512_done(sha512_state& md, void *out)
     {
         while(md.curlen < 128)
             md.buf[md.curlen++] = 0;
-        sha512_compress(md, md.buf);
+        sha_compress(md, md.buf);
         md.curlen = 0;
     }
 
@@ -170,7 +170,7 @@ void sha512_done(sha512_state& md, void *out)
 
     // Store length
     store64(md.length, md.buf+120);
-    sha512_compress(md, md.buf);
+    sha_compress(md, md.buf);
 
     // Copy output
     for(int i = 0; i < 8; i++)
